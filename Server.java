@@ -8,8 +8,14 @@ public class Server extends Thread{
     protected ServerSocket serverSock;
     private ArrayList<LocalDateTime> connectedTimes = new ArrayList<>();
     
-    public Server(int n) throws IOException {
+    public Server(int n){
         numClients = n;
+
+        try{
+            serverSock = new ServerSocket(n);
+        } catch(IOException e) {
+            System.err.println("SERVER CONSTRUCT ERROR: " + e.getMessage());
+        }
     }
 
     private class serverClients extends Thread {
@@ -19,11 +25,12 @@ public class Server extends Thread{
             client = s;
         }
 
+        @Override
         public void run() {
-            try(
+            try {
                 BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
                 PrintWriter out = new PrintWriter(client.getOutputStream(), true);
-            ) {
+            
                 String tempPass = in.readLine();
                 if( !"12345".equals(tempPass)) {
                     out.println("INVALID PASSWORD!");
@@ -31,14 +38,24 @@ public class Server extends Thread{
                     return;
                 }
 
-                out.println("PASSWORD ACCEPTED!");
+                synchronized(connectedTimes) {
+                    connectedTimes.add(LocalDateTime.now());
+                }
+
+                //out.println("PASSWORD ACCEPTED!");
                 String message = in.readLine();
                 if(message == null) {
                     client.close();
                     return;
                 }
 
-                String response = request(message);
+                String response;
+                try {
+                    response = request(message);
+                } catch (Exception e) {
+                    response = "AHHHH exception in run server";
+                }
+
                 out.println(response);
             } catch (IOException e) {
                 System.err.println("RUN SERVER NOT WORKING!!!");
@@ -58,15 +75,12 @@ public class Server extends Thread{
             serverSock = new ServerSocket(n);
             int count = 0;
 
-            while(count < numClients) {
+            while(count < n) {
                 Socket client = serverSock.accept();
 
-                synchronized(connectedTimes) {
-                    connectedTimes.add(LocalDateTime.now());
-                }
-
-                serverClients clientThread = new serverClients(client);
-                clientThread.start();
+                //serverClients clientThread = new serverClients(client);
+                //clientThread.start();
+                new serverClients(client).start();
                 count++;
             }
         } catch (IOException e) {
@@ -75,21 +89,23 @@ public class Server extends Thread{
     }
 
     public String request(String str) {
-        StringBuilder ret = new StringBuilder();
-        int num = Integer.parseInt(str);
+        try {
+            long num = Long.parseLong(str);
+            long count = 0;
 
-        for(int i = 2; i * i <= num; i++) {
-            while(num %i == 0) {
-                ret.append(i).append(" ");
-                num /= i;
+            for(long i = 0; i * i <= num; i++) {
+                if(num %i == 0) {
+                    count++;
+                    if(i != num / i) {
+                        count++;
+                    }
+                }
             }
-        }
 
-        if(num > 1) {
-            ret.append(num);
+            return "The number " + num + " has " + count + " factors";
+        } catch (Exception e) {
+            return "SERVER EXCEPTION!!!";
         }
-
-        return ret.toString();
     }
 
     public void disconnect() {
