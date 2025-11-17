@@ -33,7 +33,7 @@ public class Server extends Thread{
             
                 String tempPass = in.readLine();
                 if( !"12345".equals(tempPass)) {
-                    out.println("INVALID PASSWORD!");
+                    out.println("couldn't handshake");
                     client.close();
                     return;
                 }
@@ -71,29 +71,28 @@ public class Server extends Thread{
     }
 
     public void serve(int n) {
-        try {
-            serverSock = new ServerSocket(n);
-            int count = 0;
+        int count = 0;
 
             while(count < n) {
-                Socket client = serverSock.accept();
+                try {
+                    Socket client = serverSock.accept();
 
                 //serverClients clientThread = new serverClients(client);
                 //clientThread.start();
-                new serverClients(client).start();
-                count++;
+                    new serverClients(client).start();
+                    count++;
+                } catch (IOException e) {
+                    System.err.println("SERVE NOT WORKING :( " + e.getMessage());
+                }
             }
-        } catch (IOException e) {
-            System.err.println("SERVE NOT WORKING: " + e.getMessage());
-        }
     }
 
     public String request(String str) {
         try {
-            long num = Long.parseLong(str);
-            long count = 0;
+            int num = Integer.parseInt(str);
+            int count = 0;
 
-            for(long i = 0; i * i <= num; i++) {
+            for(long i = 1; i * i <= num; i++) {
                 if(num %i == 0) {
                     count++;
                     if(i != num / i) {
@@ -104,7 +103,7 @@ public class Server extends Thread{
 
             return "The number " + num + " has " + count + " factors";
         } catch (Exception e) {
-            return "SERVER EXCEPTION!!!";
+            return "There was an exception on the server";
         }
     }
 

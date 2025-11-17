@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.net.*;
 
 public class Client {
    protected String host;
